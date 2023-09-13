@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bowling',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const HomePage(),
@@ -24,28 +24,11 @@ class MyApp extends StatelessWidget {
 }
 
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<dynamic> items = [];
-  Future<void> readJson() async {
-    final String response = await rootBundle.loadString('assets/json/bulletin.json');
-    final data = await json.decode(response);
-    setState(() {
-      items = data;
-    });
-    debugPrint('${items.isNotEmpty ? items[0]['title'] : 'No data'}');
-  }
-
-  @override
   Widget build(BuildContext context) {
-    readJson();
-    
     return Scaffold( 
       appBar: AppBar(
         title: Image.asset('assets/images/bowling_logo.png',
@@ -75,28 +58,43 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class Bulletins extends StatelessWidget {
-  Bulletins({
-    Key? key,
+class BulletinInfos {
+  int? id;
+  String? title;
+  String? content;
+  int? up;
+  int? down;
+  String? date;
+  String? time;
+
+  BulletinInfos({
+    this.id,
     this.title,
     this.content,
-    this.date,
-    this.time,
     this.up,
     this.down,
-    this.addInfo,
+    this.date,
+    this.time,
+  });
+}
+
+
+// ignore: must_be_immutable
+class Bulletins extends StatelessWidget {
+  Bulletins({
+    Key? key, this.title,
   }) : super(key: key);
 
   String? title;
-  String? content;
-  String? date;
-  String? time;
-  String? up;
-  String? down;
-  String? addInfo;
 
   @override
   Widget build(BuildContext context) {
+
+    Future<List<dynamic>> getBulletinsJson() async{
+      final String response = await rootBundle.loadString('assets/json/bulletin.json');
+      final data = json.decode(response);
+      return data;
+    }
 
     return  Column(
       children: [
@@ -124,40 +122,55 @@ class Bulletins extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: const Color(0xffF0F0F0),
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(0, 5, 0, 5),
-            child: const SizedBox(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('테스트 게시글1', 
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+          ), 
+          child:
+        FutureBuilder<List<dynamic>>(future: getBulletinsJson(), builder: (context, snapshot){
+          final List<dynamic>? bulletinInfos = snapshot.data;
+          if (bulletinInfos != null) {
+            return ListView.builder(
+              itemCount: 4, 
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                final bulletinInfo = bulletinInfos[index];
+
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(0, 5, 0, 5),
+                  child: SizedBox(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${bulletinInfo['title']}', 
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              )
+                            ),
+                            Text('${bulletinInfo['date']} ${bulletinInfo['time']}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey
+                              )
+                            ),
+                          ],
+                        ),
+                        const Text('10분전',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          )
                         )
-                      ),
-                      Text('2023.09.10 10:00',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey
-                        )
-                      ),
-                    ],
-                  ),
-                  Text('10분전',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      ],
                     )
                   )
-                ],
-              )
-            )
-          )
+              );
+              });
+          }
+          return Container(); 
+        })
         )
       ],
     );
